@@ -1,0 +1,30 @@
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra-node1
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=${CLUSTER_NAME}
+      - CASSANDRA_DATACENTER=${DC_NAME}
+      - CASSANDRA_RACK=RAC1
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=1G
+  redis:
+    image: redis:latest
+    command: [
+      "redis-server",
+      "--maxmemory","250mb",
+      "--maxmemory-policy","allkeys-lfu"
+    ]
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
+  cassandra-data:
+
