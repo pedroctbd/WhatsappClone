@@ -1,3 +1,4 @@
+// hub.go
 package main
 
 import (
@@ -7,26 +8,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Hub maintains the set of active clients and broadcasts messages.
 type Hub struct {
-	// Registered clients.
-	clients map[*Client]bool
-
-	// Inbound messages from the clients.
-	broadcast chan []byte
-
-	// Register requests from the clients.
-	register chan *Client
-
-	// Unregister requests from clients.
-	unregister chan *Client
-
+	clients     map[string]*Client
+	delivery    chan *TargetedMessage
+	register    chan *Client
+	unregister  chan *Client
 	redisClient *redis.Client
 }
 
 func newHub(redisC *redis.Client) *Hub {
 	return &Hub{
-		clients:     make(map[*Client]bool),
-		broadcast:   make(chan []byte),
+		clients:     make(map[string]*Client),
+		delivery:    make(chan *TargetedMessage),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		redisClient: redisC,
@@ -35,18 +29,19 @@ func newHub(redisC *redis.Client) *Hub {
 
 func (h *Hub) run() {
 	ctx := context.Background()
-
 	for {
 		select {
 		case client := <-h.register:
-			h.clients[client] = true
+			// Use the client's userID as the key.
+			h.clients[client.userID] = client
+			log.Printf("User %s registered to hub", client.userID)
 
 		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-
-				delete(h.clients, client)
+			if _, ok := h.clients[client.userID]; ok {
+				delete(h.clients, client.userID)
 				close(client.send)
 
+				// Use the correct variable 'client' (lowercase).
 				if err := h.redisClient.Del(ctx, client.userID).Err(); err != nil {
 					log.Printf("Failed to delete user %s from Redis: %v", client.userID, err)
 				} else {
@@ -54,13 +49,15 @@ func (h *Hub) run() {
 				}
 			}
 
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
+		case message := <-h.delivery:
+			for _, recipientID := range message.RecipientIDs {
+				if client, ok := h.clients[recipientID]; ok {
+					select {
+					case client.send <- message.Content:
+					default:
+						close(client.send)
+						delete(h.clients, client.userID)
+					}
 				}
 			}
 		}
