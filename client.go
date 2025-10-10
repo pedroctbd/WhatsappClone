@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"time"
 
@@ -27,23 +28,12 @@ var (
 	space   = []byte{' '}
 )
 
-type Client struct {
-	hub *Hub
-
-	// The websocket connection.
-	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
-	send chan []byte
-
-	userID string
-}
-
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
+	ctx := context.Background()
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
@@ -56,7 +46,13 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+
+		deliveryMsg, err := c.chatService.ProcessMessage(ctx, c.userID, message)
+		if err != nil {
+			log.Printf("Failed to process message: %v", err)
+		}
+
+		c.hub.delivery <- deliveryMsg
 	}
 }
 
