@@ -1,17 +1,20 @@
 services:
   cassandra:
     image: cassandra:latest
-    container_name: cassandra-node1
+    container_name: cassandra
     ports:
       - "9042:9042"
-    volumes:
-      - cassandra-data:/var/lib/cassandra
     environment:
-      - CASSANDRA_CLUSTER_NAME=${CLUSTER_NAME}
-      - CASSANDRA_DATACENTER=${DC_NAME}
-      - CASSANDRA_RACK=RAC1
+      - CASSANDRA_CLUSTER_NAME=LocalCluster
+      - CASSANDRA_NUM_TOKENS=1
+      - MAX_HEAP_SIZE=512M
       - HEAP_NEWSIZE=128M
-      - MAX_HEAP_SIZE=1G
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -q 'UN'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
   redis:
     image: redis:latest
     command: [
@@ -22,9 +25,9 @@ services:
     ports:
       - "${REDIS_PORT}:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
 
 volumes:
-  redis-data:
-  cassandra-data:
+  redis_data:
+  cassandra_data:
 

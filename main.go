@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
+
+var serverID = uuid.New().String()
 
 func main() {
 
@@ -23,32 +26,26 @@ func main() {
 		log.Fatalf("Failed to start redis : %s", err)
 	}
 
-	// //cassandra
-	// cluster := gocql.NewCluster("127.0.0.1")
-	// cluster.Keyspace = "whatsappclone"
-	// cluster.ProtoVersion = 4
-	// session, err := cluster.CreateSession()
-	// sslOpts := &gocql.SslOptions{
-	// 	// For local dev, you can disable host verification.
-	// 	// For production, you'd configure your certificates here.
-	// 	EnableHostVerification: false,
-	// }
-	// cluster.SslOpts = sslOpts
-
+	//cassandra
+	// Create a cluster configuration
+	cluster := gocql.NewCluster("127.0.0.1")
+	cluster.Port = 9042
+	cluster.DisableInitialHostLookup = true
+	session, err := cluster.CreateSession()
 	if err != nil {
-		log.Fatalf("Failed to create cassandra sessions : %s", err)
+		log.Fatalf("unable to connect to Cassandra: %v", err)
 	}
-	fmt.Println("cassandra init done")
 
-	// defer session.Close()
+	defer session.Close()
 	defer rdb.Close()
 
-	hub := newHub()
+	hub := newHub(rdb)
 	go hub.run()
 	app := &Application{
-		RD:  rdb,
-		HUB: hub,
-		// CS:  session,
+		RD:       rdb,
+		HUB:      hub,
+		CS:       session,
+		ServerID: serverID,
 	}
 
 	print("Starting server")
