@@ -35,6 +35,8 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+
+	userID string
 }
 
 func (c *Client) readPump() {
