@@ -1,36 +1,41 @@
+// models.go
 package main
 
 import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
-type User struct {
-	ID                uuid.UUID `json:"id"`
-	PhoneNumber       string    `json:"phone_number"`
-	DisplayName       string    `json:"display_name"`
-	ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
-	AboutText         string    `json:"about_text,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
-	LastSeenAt        time.Time `json:"last_seen_at,omitempty"`
+// User websocket connection
+type Client struct {
+	hub         *Hub
+	conn        *websocket.Conn
+	send        chan []byte
+	userID      string
+	chatService *ChatService
 }
 
-type Chat struct {
-	ID           uuid.UUID   `json:"id"`
-	IsGroup      bool        `json:"is_group"`
-	Participants []uuid.UUID `json:"participants"`
-	CreatedAt    time.Time   `json:"created_at"`
-	GroupName    string      `json:"group_name,omitempty"`
-	GroupAdminID uuid.UUID   `json:"group_admin_id,omitempty"`
-	GroupIconURL string      `json:"group_icon_url,omitempty"`
+// Message decoded from json
+type UserMessage struct {
+	ClientMessageID string `json:"clientMessageId"`
+	RecipientID     string `json:"recipientId,omitempty"`
+	ChatID          string `json:"chatId,omitempty"`
+	Content         string `json:"content"`
 }
 
+// Message that client sends to hub
+type TargetedMessage struct {
+	Content      []byte
+	RecipientIDs []string
+}
+
+// Stored in cassandra
 type Message struct {
-	ID       uuid.UUID `json:"id"`
-	ChatID   uuid.UUID `json:"chat_id"`
-	SenderID uuid.UUID `json:"sender_id"`
-	Content  string    `json:"content"`
-	SentAt   time.Time `json:"sent_at"`
-	Status   string    `json:"status"`
+	ID       uuid.UUID
+	ChatID   uuid.UUID
+	SenderID uuid.UUID
+	Content  string
+	SentAt   time.Time
 }
