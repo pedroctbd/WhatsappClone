@@ -1,21 +1,8 @@
-// models.go
-package main
+package domain
 
 import (
 	"time"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
-
-// User websocket connection
-type Client struct {
-	hub         *Hub
-	conn        *websocket.Conn
-	send        chan []byte
-	userID      string
-	chatService *ChatService
-}
 
 // Message decoded from json
 type UserMessage struct {
@@ -33,9 +20,9 @@ type TargetedMessage struct {
 
 // Stored in cassandra
 type Message struct {
-	ID       uuid.UUID
-	ChatID   uuid.UUID
-	SenderID uuid.UUID
+	ID       string
+	ChatID   string
+	SenderID string
 	Content  string
 	SentAt   time.Time
 }

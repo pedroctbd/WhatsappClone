@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS user_chats (
     user_id uuid,
     last_message_time timeuuid,
     chat_id uuid,
-    chat_name text,         -- Denormalized: Friend's name or Group name
-    chat_type text,         -- 'one_on_one' or 'group'
-    last_message text,      -- Denormalized
+    chat_name text,         
+    chat_type text,        
+    last_message text,     
     unread_count int,
     PRIMARY KEY (user_id, last_message_time)
 ) WITH CLUSTERING ORDER BY (last_message_time DESC);
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS messages_by_chat (
     sent_at timeuuid,
     message_id uuid,
     sender_id uuid,
-    sender_name text, -- Denormalized
+    sender_name text, 
     content text,
     PRIMARY KEY (chat_id, sent_at)
 ) WITH CLUSTERING ORDER BY (sent_at DESC);
@@ -52,9 +52,9 @@ CREATE TABLE IF NOT EXISTS user_status (
 
 CREATE TABLE IF NOT EXISTS message_read_status (
     chat_id uuid,
-    message_id timeuuid,  -- Use timeuuid to match messages_by_chat
+    message_id timeuuid,  
     recipient_id uuid,
-    status text,          -- 'sent', 'delivered', 'read'
+    status text,          
     delivered_at timestamp,
     read_at timestamp,
     PRIMARY KEY ((chat_id, message_id), recipient_id)

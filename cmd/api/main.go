@@ -1,4 +1,3 @@
-// main.go
 package main
 
 import (
@@ -9,16 +8,11 @@ import (
 
 	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"github.com/google/uuid"
+	"github.com/pedroctbd/WhatsappClone/internal/chat"
+	deliveryHttp "github.com/pedroctbd/WhatsappClone/internal/delivery/http"
+	"github.com/pedroctbd/WhatsappClone/internal/storage"
 	"github.com/redis/go-redis/v9"
 )
-
-// Application holds all application-wide dependencies (the "toolbox").
-type Application struct {
-	Logger      *log.Logger
-	Hub         *Hub
-	ChatService *ChatService
-	ServerID    string
-}
 
 func main() {
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
@@ -40,13 +34,13 @@ func main() {
 	defer cassandraSession.Close()
 	defer redisClient.Close()
 
-	chatRepository := &CassandraRepository{Session: cassandraSession}
-	chatService := &ChatService{Repo: chatRepository}
+	chatRepository := storage.NewCassandraRepo(cassandraSession)
+	chatService := &chat.ChatService{Repo: chatRepository}
 
-	hub := newHub(redisClient)
-	go hub.run()
+	hub := chat.NewHub(redisClient)
+	go hub.Run()
 
-	app := &Application{
+	app := &deliveryHttp.Application{
 		Logger:      logger,
 		Hub:         hub,
 		ChatService: chatService,
@@ -54,5 +48,5 @@ func main() {
 	}
 
 	logger.Printf("Starting server %s on :3000", app.ServerID)
-	log.Fatal(http.ListenAndServe(":3000", app.routes()))
+	log.Fatal(http.ListenAndServe(":3000", app.Routes()))
 }
