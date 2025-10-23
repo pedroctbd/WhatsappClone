@@ -26,7 +26,7 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 func (app Application) handleConnections(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
-	UserID := chi.URLParam(r, "UserID")
+	UserID := chi.URLParam(r, "userID")
 	if UserID == "" {
 		log.Println("User ID is missing, connection rejected")
 		http.Error(w, "User ID is required", http.StatusBadRequest)

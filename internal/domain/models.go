@@ -1,9 +1,5 @@
 package domain
 
-import (
-	"time"
-)
-
 // Message decoded from json
 type UserMessage struct {
 	ClientMessageID string `json:"clientMessageId"`
@@ -16,13 +12,4 @@ type UserMessage struct {
 type TargetedMessage struct {
 	Content      []byte
 	RecipientIDs []string
-}
-
-// Stored in cassandra
-type Message struct {
-	ID       string
-	ChatID   string
-	SenderID string
-	Content  string
-	SentAt   time.Time
 }
